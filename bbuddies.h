@@ -1,3 +1,5 @@
+#pragma once
+
 void * get_memory(int);
 void * grow_memory(int, void *);
 void * pregrow_memory(int, void *);
