@@ -50,7 +50,7 @@ int start_memory(int size){
   }
 
   // set the mem in buddy tree this needs to be done
-  if((tree = BuddyTree_create(address_compare)) == NULL){
+  if((tree = BuddyTree_create(address_compare, mem)) == NULL){
     return 0;
   }
  
@@ -61,7 +61,7 @@ int start_memory(int size){
   BuddyTreeNode * address = (BuddyTreeNode *)(data + 1);
 
   // set the mem in buddy tree this needs to be done
-  if(BuddyTree_set(tree, tree, data) == -1){
+  if(BuddyTree_set(tree, tree, data, address) == -1){
     return 0; 
   }
   usermemoffset = mem + (tmpsize - size);
