@@ -24,7 +24,7 @@ typedef int (*BuddyTree_traverse_cb)(BuddyTreeNode *node);
 BuddyTree *BuddyTree_create(BuddyTree_compare compare, void *address);
 void BuddyTree_destroy(BuddyTree *map);
 
-int BuddyTree_set(BuddyTree *map, void *key, void *data, void *address);
+int BuddyTree_set(BuddyTree *map, void *key, void *data);
 void *BuddyTree_get(BuddyTree *map, void *key);
 
 int BuddyTree_traverse(BuddyTree *map, BuddyTree_traverse_cb traverse_cb);

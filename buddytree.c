@@ -34,8 +34,8 @@ void BuddyTree_destroy(BuddyTree *map){
   }
 }
 
-static inline BuddyTreeNode *BuddyTreeNode_create(BuddyTreeNode *parent, void *key, void *data, void *address){
-	BuddyTreeNode *node = address; //calloc(1, sizeof(BuddyTreeNode));
+static inline BuddyTreeNode *BuddyTreeNode_create(BuddyTreeNode *parent, void *key, void *data){
+	BuddyTreeNode *node = key; //calloc(1, sizeof(BuddyTreeNode));
 	check_mem(node);
 
   node->key = key;
@@ -47,31 +47,31 @@ error:
   return NULL;
 }
 
-static inline void BuddyTree_setnode(BuddyTree *map, BuddyTreeNode *node, void *key, void *data, void *address){
+static inline void BuddyTree_setnode(BuddyTree *map, BuddyTreeNode *node, void *key, void *data){
   int cmp = map->compare(node->key, key);
 
   if(cmp <= 0) {
       if(node->left) {
-          BuddyTree_setnode(map, node->left, key, data, address);
+          BuddyTree_setnode(map, node->left, key, data);
       } else {
-          node->left = BuddyTreeNode_create(node, key, data, address);
+          node->left = BuddyTreeNode_create(node, key, data);
       }
   } else {
       if(node->right) {
-          BuddyTree_setnode(map, node->right, key, data, address);
+          BuddyTree_setnode(map, node->right, key, data);
       } else {
-          node->right = BuddyTreeNode_create(node, key, data, address);
+          node->right = BuddyTreeNode_create(node, key, data);
       }
   }
 }
 
-int BuddyTree_set(BuddyTree *map, void *key, void *data, void *address){
+int BuddyTree_set(BuddyTree *map, void *key, void *data){
   if(map->root == NULL) {
       // first so just make it and get out
-      map->root = BuddyTreeNode_create(NULL, key, data, address);
+      map->root = BuddyTreeNode_create(NULL, key, data);
       check_mem(map->root);
   } else {
-      BuddyTree_setnode(map, map->root, key, data, address);
+      BuddyTree_setnode(map, map->root, key, data);
   }
 
   return 0;
