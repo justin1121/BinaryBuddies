@@ -3,7 +3,7 @@ LDFLAGS = -lpthread
 EXEC=bbdemo
 
 $(EXEC): bbuddies.o demo.o buddytree.o
-	gcc $(CCFLAGS) $(LDFLAGS) -o $(EXEC) bbuddies.o demo.o
+	gcc $(CCFLAGS) $(LDFLAGS) -o $(EXEC) bbuddies.o demo.o buddytree.o
 
 demo.o: demo.c bbuddies.h
 	gcc $(CCFLAGS) -c demo.c
