@@ -16,7 +16,7 @@ void * usermemoffset;
 BuddyTree * tree;
 
 void * get_memory(int size){
-  mem_header_t * mem_block = NULL;
+  void * mem_block = NULL;
 	
   // get the first node of the tree
   BuddyTreeNode * node = BuddyTree_get(tree, mem + 1); 
@@ -26,23 +26,37 @@ void * get_memory(int size){
   }
   else{
     while(((mem_header_t *)node->data)->free){
+      mem_header_t * data = ((mem_header_t *)node->data);
       // check if the node is the right size
       	// if yes, allocate memory and break
-      if(!(((mem_header_t *)node->data)->size / 2 >= size)){ 
+      if(!(data->size / 2 >= size)){ 
       	// set the memory to return
-				mem_block = ((mem_header_t *)node->data);
-				((mem_header_t *)node->data)->free = 0;
+				mem_block = node->key;
+				data->free = 0;
 			}	
 			else{
+        // trying to go below MIN_SIZE block return, no mem
+        if(data->size / 2 < MIN_SIZE){
+          return NULL;
+        } 
       	// if no, check for children
 				if(node->left == NULL){
 					// if there are none, make children
+          mem_header_t * newleft  = data + 1,
+                       * newright = data + 2;
+          newleft->size = data->size / 2;
+          newleft->size = data->size / 2;
+          newright->free = 1;
+          newright->free = 1;
+
+          void * keyleft  = node->key; 
+          void * keyright = node->key + 4; 
 						// left
-					if(BuddyTree_set(tree, NULL, NULL) == -1){
+					if(BuddyTree_set(tree, keyleft, newleft) == -1){
 						// error
 					}
 						// right
-					if(BuddyTree_set(tree, NULL, NULL) == -1){
+					if(BuddyTree_set(tree, keyright, newright) == -1){
 						// error
 					}
 				}
@@ -78,7 +92,7 @@ void * get_memory(int size){
    	 	}
 		}
   }
-	return (void *)mem_block;
+	return mem_block;
 }
 
 void * grow_memory(int size, void * mem){
