@@ -99,12 +99,12 @@ static inline BuddyTreeNode *BuddyTree_getnode(BuddyTree *map, BuddyTreeNode *no
   }
 }
 
-void *BuddyTree_get(BuddyTree *map, void *key){
+BuddyTreeNode *BuddyTree_get(BuddyTree *map, void *key){
   if(map->root == NULL) {
       return NULL;
   } else {
       BuddyTreeNode *node = BuddyTree_getnode(map, map->root, key);
-      return node == NULL ? NULL : node->data;
+      return node == NULL ? NULL : node;
   }
 }
 
