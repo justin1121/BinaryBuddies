@@ -16,17 +16,77 @@ void * usermemoffset;
 BuddyTree * tree;
 
 void * get_memory(int size){
-  return NULL;
+  mem_header_t * mem_block = NULL;
+	
+  // get the first node of the tree
+  BuddyTreeNode * node = BuddyTree_get(tree, mem + 1); 
+  
+  if(((mem_header_t *)node->data)->size < size){
+     // error 
+  }
+  else{
+    while(((mem_header_t *)node->data)->free){
+      // check if the node is the right size
+      	// if yes, allocate memory and break
+      if(!(((mem_header_t *)node->data)->size / 2 >= size)){ 
+      	// set the memory to return
+				mem_block = ((mem_header_t *)node->data);
+				((mem_header_t *)node->data)->free = 0;
+			}	
+			else{
+      	// if no, check for children
+				if(node->left == NULL){
+					// if there are none, make children
+						// left
+					if(BuddyTree_set(tree, NULL, NULL) == -1){
+						// error
+					}
+						// right
+					if(BuddyTree_set(tree, NULL, NULL) == -1){
+						// error
+					}
+				}
+					
+				// if there are children, check if the left is free
+				if(((mem_header_t *)node->left->data)->free){
+					// if yes, move to the left node
+					node = BuddyTree_get(tree, node->left->key);
+				}
+				// if no, check if the right node is free
+				else if(((mem_header_t *)node->right->data)->free){
+					// if yes, move to the right node
+					node = BuddyTree_get(tree, node->right->key);
+				}
+				else{
+					// if neither are free
+					// while parent is not null and right node is allocated
+					while(node->parent != NULL && !((mem_header_t *)node->right->data)->free){	
+						// move to parent and check if right node is not allocated
+						node = BuddyTree_get(tree, node->parent->key);
+						if(((mem_header_t *)node->right->data)->free){
+							// if not, move to right node
+							node = BuddyTree_get(tree, node->right->key);	
+						}	
+					}
+				}
+				// check if parent is null
+				if(node->parent == NULL){
+					// if yes, notify that there is no mem
+					// error
+					return NULL;
+				}
+   	 	}
+		}
+  }
+	return (void *)mem_block;
 }
 
 void * grow_memory(int size, void * mem){
   return NULL;
-
 } 
 
 void * pregrow_memory(int size, void * mem){
   return NULL;
-
 }
 
 void release_memory(void * mem){
