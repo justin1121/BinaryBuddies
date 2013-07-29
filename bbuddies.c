@@ -5,8 +5,6 @@
 
 #define MIN_SIZE 4
 
-static int address_compare(void * a, void * b);
-
 typedef struct _mem_header{
   int size;
   int free;
@@ -140,7 +138,7 @@ int start_memory(int size){
     return 0;
   }
 
-  if((tree = BuddyTree_create(address_compare, mem)) == NULL){
+  if((tree = BuddyTree_create(NULL, mem)) == NULL){
     return 0;
   }
  
@@ -162,19 +160,4 @@ int start_memory(int size){
 
 void end_memory(void){
 
-}
-
-static int address_compare(void * a, void * b){
-  if(strncmp((char *)a, (char *)b, 32) == 0){
-    return 0;
-  }
-  else{
-    int len = strlen((char *)b);
-    if(((char *)b)[len - 1] == '0'){
-      return -1;
-    }
-    else{
-      return 1;
-    }
-  }
 }

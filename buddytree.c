@@ -2,9 +2,22 @@
 #include "buddytree.h"
 #include "dbg.h"
 
+static int level = 0;
+
 static int default_compare(void *a, void *b){
-	/* rewrite compare function !!! */
-	return 0;
+  if(strncmp((char *)a, (char *)b, 32) == 0){
+    return 0;
+  }
+  else{
+    if(((char *)b)[level + 1] == '0'){
+      level++;
+      return -1;
+    }
+    else{
+      level++;
+      return 1;
+    }
+  }
 }
 
 BuddyTree *BuddyTree_create(BuddyTree_compare compare, void *address){
@@ -74,6 +87,8 @@ int BuddyTree_set(BuddyTree *map, void *key, void *data, void * address){
       BuddyTree_setnode(map, map->root, key, data, address);
   }
 
+  level = 0;
+
   return 0;
 error:
   return -1;
@@ -104,6 +119,7 @@ BuddyTreeNode *BuddyTree_get(BuddyTree *map, void *key){
       return NULL;
   } else {
       BuddyTreeNode *node = BuddyTree_getnode(map, map->root, key);
+      level = 0;
       return node == NULL ? NULL : node;
   }
 }
