@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include "buddytree.h"
 
@@ -9,6 +10,8 @@ static int address_compare(void * a, void * b);
 typedef struct _mem_header{
   int size;
   int free;
+  void * address;
+  char key[32];
 } mem_header_t;
 
 void * mem;
@@ -19,7 +22,7 @@ void * get_memory(int size){
   void * mem_block = NULL;
 	
   // get the first node of the tree
-  BuddyTreeNode * node = BuddyTree_get(tree, mem + 1); 
+  BuddyTreeNode * node = BuddyTree_get(tree, "0"); 
   
   if(((mem_header_t *)node->data)->size < size){
      // error 
@@ -31,7 +34,7 @@ void * get_memory(int size){
       	// if yes, allocate memory and break
       if(!(data->size / 2 >= size)){ 
       	// set the memory to return
-				mem_block = node->key;
+				mem_block = data->address;
 				data->free = 0;
 			}	
 			else{
@@ -41,22 +44,36 @@ void * get_memory(int size){
         } 
       	// if no, check for children
 				if(node->left == NULL){
-					// if there are none, make children
-          mem_header_t * newleft  = data + 1,
-                       * newright = data + 2;
+          mem_header_t * newleft  = NULL,
+                       * newright = NULL;
+
+          void * nodeaddleft = NULL,
+               * nodeaddright =  NULL;
+        
+          // find addresses
+          newleft = (mem_header_t *)((BuddyTreeNode *)(data + 1)) + 1;
+          nodeaddleft = newleft + 1;
+          newright = (mem_header_t *)((BuddyTreeNode *)nodeaddleft) + 1;
+          nodeaddright = newright + 1;
+
           newleft->size = data->size / 2;
-          newleft->size = data->size / 2;
-          newright->free = 1;
+          newleft->address = data->address;
+          strncpy(newleft->key, data->key, 32);
+          strncat(newleft->key, "0", 32);
+          newleft->free = 1;
+
+          newright->size = data->size / 2;
+          newright->address = data->address + (data->size / 2);
+          strncpy(newright->key, data->key, 32);
+          strncat(newright->key, "1", 32);
           newright->free = 1;
 
-          void * keyleft  = node->key; 
-          void * keyright = node->key + 4; 
 						// left
-					if(BuddyTree_set(tree, keyleft, newleft) == -1){
+					if(BuddyTree_set(tree, newleft->key, newleft, nodeaddleft) == -1){
 						// error
 					}
 						// right
-					if(BuddyTree_set(tree, keyright, newright) == -1){
+					if(BuddyTree_set(tree, newright->key, newright, nodeaddright) == -1){
 						// error
 					}
 				}
@@ -131,11 +148,14 @@ int start_memory(int size){
   data->size = size;
   data->free = 1;
 
+  usermemoffset = mem + (tmpsize - size);
+  data->address = usermemoffset;
+  strncpy(data->key, "0", 32);
+
   BuddyTreeNode * address = (BuddyTreeNode *)(data + 1);
-  if(BuddyTree_set(tree, address, data) == -1){
+  if(BuddyTree_set(tree, data->key, data, address) == -1){
     return 0;
   }
-  usermemoffset = mem + (tmpsize - size);
 
   return 1;
 }
@@ -145,10 +165,16 @@ void end_memory(void){
 }
 
 static int address_compare(void * a, void * b){
-  if(a == b){
+  if(strncmp((char *)a, (char *)b, 32) == 0){
     return 0;
-  } 
+  }
   else{
-    return 1;
+    int len = strlen((char *)b);
+    if(((char *)b)[len - 1] == '0'){
+      return -1;
+    }
+    else{
+      return 1;
+    }
   }
 }
