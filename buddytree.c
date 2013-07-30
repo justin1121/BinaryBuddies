@@ -36,14 +36,14 @@ error:
    return NULL;
 }
 
-static int BuddyTree_destroy_cb(BuddyTreeNode *node){
+static int BuddyTree_destroy_cb(BuddyTreeNode *node, void *address){
   free(node);
   return 0;
 }
 
 void BuddyTree_destroy(BuddyTree *map){
 	if(map) {
-		BuddyTree_traverse(map, BuddyTree_destroy_cb);
+		BuddyTree_traverse(map, NULL, BuddyTree_destroy_cb);
     free(map);
   }
 }

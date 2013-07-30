@@ -139,14 +139,7 @@ static void * grow_memory_general(int size, void * mem){
   return NULL;
 }
 
-void release_memory(void *mem){
-	// search for the memory block in the tree
-	if(!BuddyTree_traverse(tree, mem, release_memory_block)){
-		// error
-	}
-}
-
-int release_memory_block(BuddyTreeNode *node, void *address){
+static int release_memory_block(BuddyTreeNode *node, void *address){
 	// check if the node address matched the address
 	mem_header_t * data = ((mem_header_t *)node->data);
 	if(data->address == address){
@@ -156,7 +149,8 @@ int release_memory_block(BuddyTreeNode *node, void *address){
 			mem_header_t *right_data = ((mem_header_t *)node->parent->right->data);
 			if(right_data->free){
 				// reconstitute the buddies
-				repair_buddies(node, node->parent->right);
+				node->parent->left 	= NULL;
+				node->parent->right = NULL;
 				return 1;
 			}
 		}
@@ -165,7 +159,8 @@ int release_memory_block(BuddyTreeNode *node, void *address){
 			mem_header_t *left_data = ((mem_header_t *)node->parent->left->data);
 			if(left_data->free){
 				// reconstitute the buddies
-				repair_buddies(node->parent->left, node);
+				node->parent->left 	= NULL;
+				node->parent->right = NULL;
 				return 1;
 			}
 		}
@@ -176,9 +171,11 @@ int release_memory_block(BuddyTreeNode *node, void *address){
 	return 0;
 }
 
-void repair_buddies(BinaryTreeNode left_node, BinaryTreeNode right_node){
-	// take two nodes and bring them up a level to re-combine them
-	
+void release_memory(void *mem){
+	// search for the memory block in the tree
+	if(!BuddyTree_traverse(tree, mem, &release_memory_block)){
+		// error
+	}
 }
 
 int start_memory(int size){
