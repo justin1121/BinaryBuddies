@@ -3,6 +3,7 @@
 #include "dbg.h"
 
 static int level = 0;
+static int node_released = 0;
 
 static int default_compare(void *a, void *b){
   if(strncmp((char *)a, (char *)b, 32) == 0){
@@ -124,25 +125,29 @@ BuddyTreeNode *BuddyTree_get(BuddyTree *map, void *key){
   }
 }
 
-static inline int BuddyTree_traverse_nodes(BuddyTreeNode *node, BuddyTree_traverse_cb traverse_cb){
+static inline int BuddyTree_traverse_nodes(BuddyTreeNode *node, void *key, BuddyTree_traverse_cb traverse_cb){
   int rc = 0;
 
   if(node->left) {
-    rc = BuddyTree_traverse_nodes(node->left, traverse_cb);
+    rc = BuddyTree_traverse_nodes(node->left, key,traverse_cb);
     if(rc != 0) return rc;
   }
 
   if(node->right) {
-    rc = BuddyTree_traverse_nodes(node->right, traverse_cb);
+    rc = BuddyTree_traverse_nodes(node->right, key, traverse_cb);
     if(rc != 0) return rc;
   }
 
-  return traverse_cb(node);
+	if(node_released == 0 && traverse_cb(node, key) == 1){
+		node_released = 1;
+	}
+  return 1;
 }
 
-int BuddyTree_traverse(BuddyTree *map, BuddyTree_traverse_cb traverse_cb){
-  if(map->root) {
-    return BuddyTree_traverse_nodes(map->root, traverse_cb);
+int BuddyTree_traverse(BuddyTree *map, void *key, BuddyTree_traverse_cb traverse_cb){
+  node_released = 0;
+	if(map->root) {
+    return BuddyTree_traverse_nodes(map->root, key, traverse_cb);
   }
 
   return 0;

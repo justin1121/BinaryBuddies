@@ -111,15 +111,74 @@ void * get_memory(int size){
 }
 
 void * grow_memory(int size, void * mem){
+  // copy data to a temporary mem block
+  
+  // remove data from current block
+  
+  // split the node
+  
+  // copy the memory to the new right block
+  
   return NULL;
 } 
 
 void * pregrow_memory(int size, void * mem){
+  // copy data to a temporary mem block
+  
+  // remove data from current block
+  
+  // split the node
+  
+  // copy the memory to the new left block
+  
   return NULL;
 }
 
-void release_memory(void * mem){
+static void * grow_memory_general(int size, void * mem){
+  // perform grow operations when truncation is not needed
+  return NULL;
+}
 
+void release_memory(void *mem){
+	// search for the memory block in the tree
+	if(!BuddyTree_traverse(tree, mem, release_memory_block)){
+		// error
+	}
+}
+
+int release_memory_block(BuddyTreeNode *node, void *address){
+	// check if the node address matched the address
+	mem_header_t * data = ((mem_header_t *)node->data);
+	if(data->address == address){
+		// if sibling node is free, create a larger node
+		if(node->parent->left == node){
+			// check the right node
+			mem_header_t *right_data = ((mem_header_t *)node->parent->right->data);
+			if(right_data->free){
+				// reconstitute the buddies
+				repair_buddies(node, node->parent->right);
+				return 1;
+			}
+		}
+		else{
+			// check the left node
+			mem_header_t *left_data = ((mem_header_t *)node->parent->left->data);
+			if(left_data->free){
+				// reconstitute the buddies
+				repair_buddies(node->parent->left, node);
+				return 1;
+			}
+		}
+		// buddy not free, release memory in the single block
+		data->free = 1; 
+		return 1;
+	}
+	return 0;
+}
+
+void repair_buddies(BinaryTreeNode left_node, BinaryTreeNode right_node){
+	// take two nodes and bring them up a level to re-combine them
+	
 }
 
 int start_memory(int size){
