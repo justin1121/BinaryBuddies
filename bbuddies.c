@@ -229,5 +229,5 @@ int start_memory(int size){
 }
 
 void end_memory(void){
-
+  free(mem);
 }
