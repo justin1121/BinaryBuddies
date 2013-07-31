@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <semaphore.h>
 #include "buddytree.h"
 
 #define MIN_SIZE 4
@@ -15,11 +16,13 @@ typedef struct _mem_header{
 void * mem;
 void * usermemoffset;
 BuddyTree * tree;
+sem_t lock;
 
 void * get_memory(int size){
   void * mem_block = NULL;
 	
   // get the first node of the tree
+  //sem_wait(&lock);
   BuddyTreeNode * node = BuddyTree_get(tree, "0"); 
   
   if(((mem_header_t *)node->data)->size < size){
@@ -38,6 +41,7 @@ void * get_memory(int size){
 			else{
         // trying to go below MIN_SIZE block return, no mem
         if(data->size / 2 < MIN_SIZE){
+          //sem_post(&lock);
           return NULL;
         } 
       	// if no, check for children
@@ -102,11 +106,13 @@ void * get_memory(int size){
 				if(node->parent == NULL){
 					// if yes, notify that there is no mem
 					// error
+          //sem_post(&lock);
 					return NULL;
 				}
    	 	}
 		}
   }
+  //sem_post(&lock);
 	return mem_block;
 }
 
@@ -173,16 +179,23 @@ static int release_memory_block(BuddyTreeNode *node, void *address){
 
 void release_memory(void *mem){
 	// search for the memory block in the tree
+  //sem_wait(&lock);
 	if(!BuddyTree_traverse(tree, mem, &release_memory_block)){
 		// error
 	}
+  //sem_post(&lock);
 }
 
 int start_memory(int size){
   int tmpsize;
+  
+  // init the semaphore
+  //sem_init(&lock, 0, 0);
 
+  // make sure it is a power of 2
   if((size & (size - 1)) == 0){
     int totalnodes = size / MIN_SIZE;  
+    // find total size needed
     tmpsize = sizeof(BuddyTree) + size + 
               (sizeof(BuddyTreeNode) * totalnodes) + 
               (sizeof(mem_header_t) * totalnodes);
@@ -193,7 +206,8 @@ int start_memory(int size){
   else{
     return 0;
   }
-
+  
+  // create the tree
   if((tree = BuddyTree_create(NULL, mem)) == NULL){
     return 0;
   }
