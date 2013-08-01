@@ -3,7 +3,7 @@
 #include "dbg.h"
 
 static int level = 0;
-static int node_released = 0;
+static int node_found = 0;
 
 static int default_compare(void *a, void *b){
   if(strncmp((char *)a, (char *)b, 32) == 0){
@@ -36,7 +36,7 @@ error:
    return NULL;
 }
 
-static int BuddyTree_destroy_cb(BuddyTreeNode *node, void *address){
+static long int BuddyTree_destroy_cb(BuddyTreeNode *node, void *address){
   free(node);
   return 0;
 }
@@ -125,8 +125,9 @@ BuddyTreeNode *BuddyTree_get(BuddyTree *map, void *key){
   }
 }
 
-static inline int BuddyTree_traverse_nodes(BuddyTreeNode *node, void *key, BuddyTree_traverse_cb traverse_cb){
-  int rc = 0;
+static inline long int BuddyTree_traverse_nodes(BuddyTreeNode *node, void *key, BuddyTree_traverse_cb traverse_cb){
+  long int rc = 0;
+	long int address = 0;
 
   if(node->left) {
     rc = BuddyTree_traverse_nodes(node->left, key,traverse_cb);
@@ -138,15 +139,18 @@ static inline int BuddyTree_traverse_nodes(BuddyTreeNode *node, void *key, Buddy
     if(rc != 0) return rc;
   }
 
-	if(node_released == 0 && traverse_cb(node, key) == 1){
-		node_released = 1;
+	if(node_found == 0){
+		address = traverse_cb(node, key);
+		if(address != 0){
+			node_found = 1;
+		}
 	}
-  return 1;
+  return address;
 }
 
-int BuddyTree_traverse(BuddyTree *map, void *key, BuddyTree_traverse_cb traverse_cb){
-  node_released = 0;
-	if(map->root) {
+long int BuddyTree_traverse(BuddyTree *map, void *key, BuddyTree_traverse_cb traverse_cb){
+  node_found = 0;
+	if(map->root){
     return BuddyTree_traverse_nodes(map->root, key, traverse_cb);
   }
 
