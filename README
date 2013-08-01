@@ -1,0 +1,17 @@
+BinaryBuddies
+
+Binary Buddies Memory Management System
+
+Justin Patriquin - B00549827 -- Logan Pitman - B00533117
+
+Acknowledgements
+
+buddytree.c and buddytree.h are highly modified versions of a binary search tree taken from the online book Learn C the Hard Way.
+
+Test Cases
+
+1. Test to make sure the the function returns actual addresses.
+2. Test to make sure the user memory references can't be used after freeing them with release_memory.
+3. Test to make sure the leafs nodes are created when a user asks for memory.
+4. Test to make sure the leaf node is removed when a user release memory using release_memory.
+5. Test to make sure actually data can be put into the address space.

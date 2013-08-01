@@ -14,5 +14,7 @@ int main(int argc, char * argv[]){
   release_memory(mem2);
   release_memory(mem3);
 
+  end_memory();
+
   return 0;
 }
