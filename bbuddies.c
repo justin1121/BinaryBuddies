@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <semaphore.h>
 #include "buddytree.h"
+#include "bbuddies.h"
 
 #define MIN_SIZE 4
 
@@ -12,6 +13,8 @@ typedef struct _mem_header{
   void * address;
   char key[32];
 } mem_header_t;
+
+void split_node(mem_header_t *, void **, void **);
 
 void * mem;
 void * usermemoffset;
@@ -46,38 +49,7 @@ void * get_memory(int size){
         } 
       	// if no, check for children
 				if(node->left == NULL){
-          mem_header_t * newleft  = NULL,
-                       * newright = NULL;
-
-          void * nodeaddleft = NULL,
-               * nodeaddright =  NULL;
-        
-          // find addresses
-          newleft = (mem_header_t *)((BuddyTreeNode *)(data + 1)) + 1;
-          nodeaddleft = newleft + 1;
-          newright = (mem_header_t *)((BuddyTreeNode *)nodeaddleft) + 1;
-          nodeaddright = newright + 1;
-
-          newleft->size = data->size / 2;
-          newleft->address = data->address;
-          strncpy(newleft->key, data->key, 32);
-          strncat(newleft->key, "0", 32);
-          newleft->free = 1;
-
-          newright->size = data->size / 2;
-          newright->address = data->address + (data->size / 2);
-          strncpy(newright->key, data->key, 32);
-          strncat(newright->key, "1", 32);
-          newright->free = 1;
-
-						// left
-					if(BuddyTree_set(tree, newleft->key, newleft, nodeaddleft) == -1){
-						// error
-					}
-						// right
-					if(BuddyTree_set(tree, newright->key, newright, nodeaddright) == -1){
-						// error
-					}
+          split_node(data, NULL, NULL);
 				}
 					
 				// if there are children, check if the left is free
@@ -116,36 +88,142 @@ void * get_memory(int size){
 	return mem_block;
 }
 
-void * grow_memory(int size, void * mem){
-  // copy data to a temporary mem block
-  
-  // remove data from current block
-  
-  // split the node
-  
-  // copy the memory to the new right block
-  
-  return NULL;
-} 
-
-void * pregrow_memory(int size, void * mem){
-  // copy data to a temporary mem block
-  
-  // remove data from current block
-  
-  // split the node
-  
-  // copy the memory to the new left block
-  
-  return NULL;
+static long int grow_memory_cb(BuddyTreeNode *node, void *address){
+	// check if the node matches the address
+	long int node_i = 0;
+	
+	mem_header_t * data = ((mem_header_t *)node->data);
+	if(data->address == address){
+		char node_s[18];
+		sprintf(node_s, "%p", node);
+		node_i = strtol(node_s, NULL, 16);
+		
+		return node_i;
+	}
+	
+	return node_i;
 }
 
 static void * grow_memory_general(int size, void * mem){
   // perform grow operations when truncation is not needed
+	// 
+	long int node_i;
+	
+	node_i = BuddyTree_traverse(tree, mem, &grow_memory_cb);
+	if(!node_i){
+		// error
+		return NULL;
+	}
+	
+	void * node_v = (void *)node_i;
+	BuddyTreeNode * node = (BuddyTreeNode *)node_v;
+	mem_header_t * data = (mem_header_t *)node->data;
+	
+	// check if block is big enough
+	if(data->size >= size){
+		// memory block is big enough
+		return mem;
+	}	
+	
+	// check if parent block is big enough
+	if((data->size * 2) >= size){
+		BuddyTreeNode * parent_node 	= node->parent;
+		mem_header_t * left_node 			= parent_node->left->data;
+		mem_header_t * right_node 		= parent_node->right->data;
+		
+		if(left_node->free && right_node->free){
+			// use the parent node as the memory block
+			mem_header_t * parent_data = parent_node->data;
+			memcpy(parent_data->address, data->address, data->size);
+			parent_data->size = size;
+			parent_node->left = NULL;
+			parent_node->right = NULL;
+		}
+		else{
+			// use get memory to find an address
+			mem_header_t * new_block = get_memory(size);
+			
+			// copy the old data to the new memory block
+			memcpy(new_block->address, data->address, data->size);
+			new_block->size = size;
+			
+			// release the old memory
+			release_memory(data->address);
+			return (void *)new_block->address;
+		}
+	}
+	
   return NULL;
 }
 
-static int release_memory_block(BuddyTreeNode *node, void *address){
+void * grow_memory(int size, void * mem){
+  // find block at the mem address
+	long int node_i;
+	
+	node_i = BuddyTree_traverse(tree, mem, &grow_memory_cb);
+	if(!node_i){
+		// error
+		return NULL;
+	}
+	
+	void * node_v = (void *)node_i;
+	BuddyTreeNode * node = (BuddyTreeNode *)node_v;
+	mem_header_t * data = (mem_header_t *)node->data;
+	
+	if(size <= data->size / 2){
+		// truncate the node
+		//split_node(mem_header_t * data, void ** left, void ** right);
+		void * new_data;
+		split_node(data, NULL, &new_data);
+		mem_header_t * headdata = new_data;
+		
+		// move the parent's data to the new right node
+		memcpy(headdata->address, data->address, size);
+		headdata->free = 0;
+		release_memory(data->address);
+		
+		return headdata->address;
+	}
+  
+  
+  return grow_memory_general(size, mem);
+} 
+
+void * pregrow_memory(int size, void * mem){
+	// find block at the mem address
+	long int node_i;
+	
+	node_i = BuddyTree_traverse(tree, mem, &grow_memory_cb);
+	if(!node_i){
+		// error
+		return NULL;
+	}
+	
+	void * node_v = (void *)node_i;
+	BuddyTreeNode * node = (BuddyTreeNode *)node_v;
+	mem_header_t * data = (mem_header_t *)node->data;
+	
+	if(size <= data->size / 2){
+		// truncate the node
+		//split_node(mem_header_t * data, void ** left, void ** right);
+		void * new_data;
+		split_node(data, &new_data, NULL);
+		mem_header_t * headdata = new_data;
+		
+		// move the parent's data to the new right node
+		memcpy(headdata->address, data->address, size);
+		headdata->free = 0;
+		release_memory(data->address);
+		
+		return headdata->address;
+	}
+  
+  
+  return grow_memory_general(size, mem);
+}
+
+
+static long int release_memory_block(BuddyTreeNode *node, void *address){
 	// check if the node address matched the address
 	mem_header_t * data = ((mem_header_t *)node->data);
 	if(data->address == address){
@@ -180,7 +258,7 @@ static int release_memory_block(BuddyTreeNode *node, void *address){
 void release_memory(void *mem){
 	// search for the memory block in the tree
   //sem_wait(&lock);
-	if(!BuddyTree_traverse(tree, mem, &release_memory_block)){
+	if(!BuddyTree_traverse(tree, mem, release_memory_block)){
 		// error
 	}
   //sem_post(&lock);
@@ -230,4 +308,46 @@ int start_memory(int size){
 
 void end_memory(void){
   free(mem);
+}
+
+void split_node(mem_header_t * data, void ** left, void ** right){
+   mem_header_t * newleft  = NULL,
+                * newright = NULL;
+
+   void * nodeaddleft = NULL,
+        * nodeaddright =  NULL;
+        
+   // find addresses
+   newleft = (mem_header_t *)((BuddyTreeNode *)(data + 1)) + 1;
+   nodeaddleft = newleft + 1;
+   newright = (mem_header_t *)((BuddyTreeNode *)nodeaddleft) + 1;
+   nodeaddright = newright + 1;
+
+   newleft->size = data->size / 2;
+   newleft->address = data->address;
+   strncpy(newleft->key, data->key, 32);
+   strncat(newleft->key, "0", 32);
+   newleft->free = 1;
+
+   newright->size = data->size / 2;
+   newright->address = data->address + (data->size / 2);
+   strncpy(newright->key, data->key, 32);
+   strncat(newright->key, "1", 32);
+   newright->free = 1;
+
+	 // left
+	 if(BuddyTree_set(tree, newleft->key, newleft, nodeaddleft) == -1){
+	   // error
+	 }
+	 // right
+	 if(BuddyTree_set(tree, newright->key, newright, nodeaddright) == -1){
+	   // error
+	 }
+  
+  if(left != NULL){
+    *left = newleft->address; 
+  }
+  if(right != NULL){
+    *right = newright->address; 
+  }
 }
